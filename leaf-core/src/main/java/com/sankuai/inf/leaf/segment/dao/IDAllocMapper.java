@@ -24,6 +24,10 @@ public interface IDAllocMapper {
     })
     LeafAlloc getLeafAlloc(@Param("tag") String tag);
 
+    /**
+     * 单条update语句是原子的，MySQL在执行update语句时会加行锁或者排他锁，别的update语句必须等待。
+     * @param tag
+     */
     @Update("UPDATE leaf_alloc SET max_id = max_id + step WHERE biz_tag = #{tag}")
     void updateMaxId(@Param("tag") String tag);
 

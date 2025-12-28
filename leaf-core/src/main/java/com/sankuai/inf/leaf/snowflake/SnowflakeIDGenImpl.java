@@ -25,8 +25,11 @@ public class SnowflakeIDGenImpl implements IDGen {
     private final long sequenceBits = 12L;
     private final long workerIdShift = sequenceBits;
     private final long timestampLeftShift = sequenceBits + workerIdBits;
+    //-1在不同机器上有不同的二进制表示，32位就是32个1，64位则是64个1
+    //"~"运算符：取反。整个掩码的计算逻辑：-1左移12位后，后12位全为0，接着取反操作，高位全为0后12位变成1。
+    //掩码的目的：提取后12位，高位全部补0。通常使用“&”运算符和掩码做运算。
     private final long sequenceMask = ~(-1L << sequenceBits);
-    private long workerId;
+    private long workerId = 1;
     private long sequence = 0L;
     private long lastTimestamp = -1L;
     private static final Random RANDOM = new Random();
@@ -60,6 +63,7 @@ public class SnowflakeIDGenImpl implements IDGen {
     @Override
     public synchronized Result get(String key) {
         long timestamp = timeGen();
+        //解决时钟回拨问题
         if (timestamp < lastTimestamp) {
             long offset = lastTimestamp - timestamp;
             if (offset <= 5) {
@@ -77,6 +81,7 @@ public class SnowflakeIDGenImpl implements IDGen {
                 return new Result(-3, Status.EXCEPTION);
             }
         }
+        //表示同一毫秒内生成的递增序列
         if (lastTimestamp == timestamp) {
             sequence = (sequence + 1) & sequenceMask;
             if (sequence == 0) {
@@ -86,9 +91,13 @@ public class SnowflakeIDGenImpl implements IDGen {
             }
         } else {
             //如果是新的ms开始
+            //为什么不直接从0开始呢？如果生成ID的频率不高，例如1毫秒一次，从0开始的话每个id的后12为序列号都是0。
             sequence = RANDOM.nextInt(100);
         }
         lastTimestamp = timestamp;
+        //“|”运算符：有1出1，全0出0
+        //“^”运算符：不同出1，相同出0
+        //（timestamp - twepoch）意思是不用从1970起的毫秒数，能够使用更长的年份
         long id = ((timestamp - twepoch) << timestampLeftShift) | (workerId << workerIdShift) | sequence;
         return new Result(id, Status.SUCCESS);
 

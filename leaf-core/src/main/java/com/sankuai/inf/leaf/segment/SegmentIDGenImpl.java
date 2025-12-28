@@ -204,7 +204,9 @@ public class SegmentIDGenImpl implements IDGen {
             buffer.rLock().lock();
             try {
                 final Segment segment = buffer.getCurrent();
-                if (!buffer.isNextReady() && (segment.getIdle() < 0.9 * segment.getStep()) && buffer.getThreadRunning().compareAndSet(false, true)) {
+                //步长已经用了10%了，启动定时线程
+                if (!buffer.isNextReady() && (segment.getIdle() < 0.9 * segment.getStep()) &&
+                        buffer.getThreadRunning().compareAndSet(false, true)) {
                     service.execute(new Runnable() {
                         @Override
                         public void run() {
@@ -236,6 +238,7 @@ public class SegmentIDGenImpl implements IDGen {
             } finally {
                 buffer.rLock().unlock();
             }
+            //segment已经被用完，执行下面的语句
             waitAndSleep(buffer);
             buffer.wLock().lock();
             try {

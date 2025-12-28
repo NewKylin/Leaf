@@ -27,6 +27,7 @@ public class IDGenServiceTest {
         dataSource.setUrl(properties.getProperty("jdbc.url"));
         dataSource.setUsername(properties.getProperty("jdbc.username"));
         dataSource.setPassword(properties.getProperty("jdbc.password"));
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
         dataSource.init();
 
         // Config Dao
